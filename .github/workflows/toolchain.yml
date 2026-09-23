@@ -30,9 +30,9 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            runner: depot-ubuntu-22.04-16
+            runner: depot-ubuntu-22.04-4
           - arch: aarch64
-            runner: depot-ubuntu-22.04-arm-16
+            runner: depot-ubuntu-22.04-arm-4
     defaults:
       run:
         shell: bash
