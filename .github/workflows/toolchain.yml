@@ -30,9 +30,9 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            runner: depot-ubuntu-22.04-4
+            runner: ubuntu-24.04
           - arch: aarch64
-            runner: depot-ubuntu-22.04-arm-4
+            runner: ubuntu-24.04-arm
     defaults:
       run:
         shell: bash
@@ -63,7 +63,7 @@ jobs:
   macos:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
     name: apple-aarch64
-    runs-on: namespace-profile-macos-15
+    runs-on: macos-15
     timeout-minutes: 360
     defaults:
       run:

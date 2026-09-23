@@ -1,4 +1,4 @@
-# llvm-build-standalone
+# llvm-build
 
 Build and package LLVM (Clang, lld, BOLT, and compiler runtimes) for
 [python-build-standalone](https://github.com/astral-sh/python-build-standalone).

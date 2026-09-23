@@ -35,7 +35,7 @@ builder_image=${3:-$(cat "${script_dir}/build/image-${arch}.txt")}
 if ! docker image inspect "${smoke_image}" > /dev/null 2>&1; then
     docker pull --platform "${platform}" "${smoke_image}"
 fi
-volume=$(docker volume create --label llvm-build-standalone-validation)
+volume=$(docker volume create --label llvm-build-validation)
 trap 'docker volume rm "${volume}" > /dev/null' EXIT
 
 # Prepare the distribution and old C headers/startup files on a Linux filesystem.

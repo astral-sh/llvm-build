@@ -208,7 +208,7 @@ def build_llvm(build_path: Path) -> Path:
         download_to_path(entry["url"], dest, entry["size"], entry["sha256"])
         downloaded_paths.append(dest)
 
-    with tempfile.TemporaryDirectory(prefix="llvm-build-standalone-") as td:
+    with tempfile.TemporaryDirectory(prefix="llvm-build-") as td:
         temp_dir = Path(td)
 
         for path in downloaded_paths:

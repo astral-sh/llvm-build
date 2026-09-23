@@ -98,7 +98,7 @@ jobs:
         with:
           exchange-url: ${{ secrets.RELEASES_STS_API_URL }}/exchange
           audience: ${{ secrets.RELEASES_STS_API_URL }}
-          repository: astral-sh/llvm-build-standalone
+          repository: astral-sh/llvm-build
           permissions: |
             contents: write
             workflows: write
