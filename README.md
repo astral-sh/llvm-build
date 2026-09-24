@@ -68,9 +68,3 @@ Release provisioning is managed in `astral-sh/github-policies`: `release-gate`
 requires Full-time team approval without self-review or admin bypass, and the
 `release-environment-gate` app then authorizes the publishing job's `release`
 environment. Both environments are restricted to `main`.
-
-Install `release-environment-gate` and `astral-releases-bot` on this repository,
-and configure `RELEASES_STS_API_URL` in the `release` environment. The broker reads
-`.github/secure-token-service-release.json` from `main` and issues a short-lived
-token scoped to this repository for release and tag creation. Merge that policy
-and apply the repository protection settings before publishing the first release.
