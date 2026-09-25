@@ -33,9 +33,18 @@ jobs:
     steps:
       - run: echo "Release approved"
 
+  release-ready:
+    name: Ready to release
+    # Complete a release deployment before publishing to satisfy tag protection.
+    needs: release-gate
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - run: echo "Release ready"
+
   release:
     name: Release
-    needs: release-gate
+    needs: release-ready
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release
@@ -63,6 +72,10 @@ jobs:
             --workflow toolchain.yml --branch main --commit "${RELEASE_SHA}" \
             --status success --limit 100 --json databaseId,event \
             --jq '[.[] | select(.event == "push" or .event == "workflow_dispatch")][0].databaseId')
+          if [[ ! "${run_id}" =~ ^[0-9]+$ ]]; then
+            echo "No successful toolchain build found on main for ${RELEASE_SHA}" >&2
+            exit 1
+          fi
           echo "run-id=${run_id}" >> "${GITHUB_OUTPUT}"
 
       - name: Download tarballs
@@ -86,7 +99,7 @@ jobs:
         if: ${{ inputs.dry-run }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: release-preview-${{ inputs.tag }}
+          name: release-preview-${{ inputs.tag }}-${{ github.run_attempt }}
           path: build/release/llvm-*.tar.zst
           if-no-files-found: error
           compression-level: '0'
