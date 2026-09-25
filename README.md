@@ -63,3 +63,8 @@ and publishes them in a GitHub release. For example:
 `llvm-23.1.2+20260923-gnu_only-x86_64-unknown-linux-gnu.tar.zst`.
 
 Enable `dry-run` to download a preview of the renamed tarballs without publishing.
+
+Release provisioning is managed in `astral-sh/github-policies`: `release-gate`
+requires Full-time team approval without self-review or admin bypass, and the
+`release-environment-gate` app then authorizes the publishing job's `release`
+environment. Both environments are restricted to `main`.

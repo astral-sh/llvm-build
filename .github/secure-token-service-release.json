@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "repositories": {
+    "llvm-build": {
+      "name": "astral-sh/llvm-build",
+      "id": 1384182427,
+      "oidc_subject": "immutable",
+      "owner_id": 115962839
+    }
+  },
+  "rules": [
+    {
+      "caller": "llvm-build",
+      "environment": "release",
+      "caller_workflow": "release.yml",
+      "on": ["workflow_dispatch"],
+      "permissions": { "contents": "write", "workflows": "write" },
+      "target": "llvm-build"
+    }
+  ]
+}
