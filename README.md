@@ -66,5 +66,5 @@ Enable `dry-run` to download a preview of the renamed tarballs without publishin
 
 Release provisioning is managed in `astral-sh/github-policies`: `release-gate`
 requires Full-time team approval without self-review or admin bypass, and the
-`release-environment-gate` app then authorizes the publishing job's `release`
-environment. Both environments are restricted to `main`.
+`release-environment-gate` app then authorizes the `release` environment used by
+the `release-ready` and `release` jobs. Both environments are restricted to `main`.
