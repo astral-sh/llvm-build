@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release date tag (e.g., '20260923')."
+        required: true
+        type: string
+      sha:
+        description: "The full SHA of a successfully built commit on main."
+        required: true
+        type: string
+      dry-run:
+        description: "Prepare release tarballs without publishing."
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release-gate:
+    # This name is used by Astral's release environment protection rule.
+    name: release-gate
+    runs-on: ubuntu-latest
+    # Require the Full-time team, prevent self-review, and disable admin bypass
+    # in this environment's GitHub settings, matching astral-sh/uv.
+    environment: release-gate
+    steps:
+      - run: echo "Release approved"
+
+  release:
+    name: Release
+    needs: release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      RELEASE_SHA: ${{ inputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find successful build
+        id: build
+        run: |
+          run_id=$(gh run list --repo "${GITHUB_REPOSITORY}" \
+            --workflow toolchain.yml --branch main --commit "${RELEASE_SHA}" \
+            --status success --limit 100 --json databaseId,event \
+            --jq '[.[] | select(.event == "push" or .event == "workflow_dispatch")][0].databaseId')
+          echo "run-id=${run_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download tarballs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.build.outputs.run-id }}
+          pattern: llvm-*
+          merge-multiple: true
+          path: build/release
+
+      - name: Rename release tarballs
+        run: |
+          version=$(git show "${RELEASE_SHA}:Dockerfile" | sed -n 's/^ARG LLVM_VERSION=//p')
+          for archive in build/release/llvm-*.tar.zst; do
+            filename=$(basename "${archive}")
+            mv "${archive}" "build/release/llvm-${version}+${RELEASE_TAG}-${filename#llvm-}"
+          done
+
+      - name: Upload dry-run preview
+        if: ${{ inputs.dry-run }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-preview-${{ inputs.tag }}
+          path: build/release/llvm-*.tar.zst
+          if-no-files-found: error
+          compression-level: '0'
+
+      - name: Get release token
+        id: release-token
+        if: ${{ !inputs.dry-run }}
+        uses: open-security-tools/ost-simple-sts@974a63a2daaaa40f7c6dec40d334f3da4421469e
+        with:
+          exchange-url: ${{ secrets.RELEASES_STS_API_URL }}/exchange
+          audience: ${{ secrets.RELEASES_STS_API_URL }}
+          repository: astral-sh/llvm-build
+          permissions: |
+            contents: write
+            workflows: write
+
+      - name: Publish release
+        if: ${{ !inputs.dry-run }}
+        env:
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
+        run: |
+          gh release create "${RELEASE_TAG}" build/release/llvm-*.tar.zst \
+            --repo "${GITHUB_REPOSITORY}" --target "${RELEASE_SHA}" \
+            --title "${RELEASE_TAG}" --generate-notes --latest
