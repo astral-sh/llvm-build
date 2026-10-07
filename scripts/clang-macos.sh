@@ -32,6 +32,7 @@ export PATH=${ROOT}/CMake.app/Contents/bin:${PATH}
 mkdir llvm
 pushd llvm
 tar --strip-components=1 -xf "${ROOT}/llvm-project-${LLVM_VERSION}.src.tar.xz"
+patch -p1 < "${ROOT}/llvm-bolt-instrumentation-stack.patch"
 popd
 
 mkdir llvm-objdir

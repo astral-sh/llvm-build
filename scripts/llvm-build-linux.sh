@@ -26,6 +26,7 @@ export PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
 
 mkdir -p /build/llvm/src
 tar -xf /opt/sources/llvm.tar.xz --strip-components=1 -C /build/llvm/src
+patch -d /build/llvm/src -p1 < /scripts/llvm-bolt-instrumentation-stack.patch
 
 # Build a bootstrap clang against the system (Trixie) headers and libraries.
 cmake -S /build/llvm/src/llvm -B /build/llvm/bootstrap \

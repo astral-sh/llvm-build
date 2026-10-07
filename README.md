@@ -60,7 +60,7 @@ Run the `Release` workflow manually with a release tag such as `20260923` and
 the commit SHA of a successful `toolchain` build on `main`. It downloads that
 build's LLVM tarballs, adds the LLVM version and release tag to their filenames,
 and publishes them in a GitHub release. For example:
-`llvm-23.1.2+20260923-gnu_only-x86_64-unknown-linux-gnu.tar.zst`.
+`llvm-23.1.3+20260923-gnu_only-x86_64-unknown-linux-gnu.tar.zst`.
 
 Enable `dry-run` to download a preview of the renamed tarballs without publishing.
 
