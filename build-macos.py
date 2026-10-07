@@ -215,6 +215,7 @@ def build_llvm(build_path: Path) -> Path:
             shutil.copy(path, temp_dir / path.name)
 
         shutil.copy(script, temp_dir / script.name)
+        shutil.copy(ROOT / "scripts" / "llvm-bolt-instrumentation-stack.patch", temp_dir)
 
         env = os.environ.copy()
         env.pop("PYTHONSAFEPATH", None)
