@@ -26,13 +26,10 @@ if [ "${BUILDARCH}" != "${TARGETARCH}" ]; then
     exit 1
 fi
 dpkg-deb --extract /tmp/ca-certificates.deb /tmp/ca-certificates
-# Exclude the distrusted emSign G3 root from bootstrap and package-managed trust.
-disabled_ca=mozilla/emSign_ECC_Root_CA_-_G3.crt
-rm "/tmp/ca-certificates/usr/share/ca-certificates/${disabled_ca}"
-# Debian's initial package configuration honors the exclusion only when its
-# CA directory exists.
-mkdir -p /etc/ssl/certs /usr/share/ca-certificates
-printf '!%s\n' "${disabled_ca}" >> /etc/ca-certificates.conf
+# Exclude the distrusted emSign G3 root from the bootstrap bundle.
+distrusted_ca=emSign_ECC_Root_CA_-_G3
+rm "/tmp/ca-certificates/usr/share/ca-certificates/mozilla/${distrusted_ca}.crt"
+mkdir -p /etc/ssl/certs
 cat /tmp/ca-certificates/usr/share/ca-certificates/mozilla/*.crt > /etc/ssl/certs/ca-certificates.crt
 # The minimal image does not yet have OpenSSL's default CA path.
 printf '%s\n' 'Acquire::https::CaInfo "/etc/ssl/certs/ca-certificates.crt";' > /etc/apt/apt.conf.d/99https-ca
@@ -46,6 +43,10 @@ deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/$
 SOURCES
 # Fetch the pinned Trixie package lists once for both downstream stages.
 apt-get update
+# Configure system trust before the downstream stages use HTTPS.
+apt-get install -y --no-install-recommends ca-certificates
+sed -i "s|^mozilla/${distrusted_ca}[.]crt$|!&|" /etc/ca-certificates.conf
+update-ca-certificates
 EOF
 
 # Construct a sysroot for the target architecture
@@ -61,8 +62,7 @@ FROM target-${TARGETARCH} AS target
 FROM target AS sysroot
 ARG JESSIE_SNAPSHOT=20230322T152120Z
 ARG STRETCH_SNAPSHOT=20230423T032736Z
-RUN apt-get install -y --no-install-recommends \
-    ca-certificates mmdebstrap gpgv
+RUN apt-get install -y --no-install-recommends mmdebstrap gpgv
 
 # mmdebstrap's APT hooks can redirect file descriptors above 9, which dash
 # rejects. Use bash only in this stage, not in the final image.
@@ -144,7 +144,6 @@ apt-get install -y --no-install-recommends \
     binutils-dev \
     bison \
     build-essential \
-    ca-certificates \
     cmake \
     curl \
     file \
