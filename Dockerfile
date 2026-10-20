@@ -26,7 +26,13 @@ if [ "${BUILDARCH}" != "${TARGETARCH}" ]; then
     exit 1
 fi
 dpkg-deb --extract /tmp/ca-certificates.deb /tmp/ca-certificates
-mkdir -p /etc/ssl/certs
+# Exclude the distrusted emSign G3 root from bootstrap and package-managed trust.
+disabled_ca=mozilla/emSign_ECC_Root_CA_-_G3.crt
+rm "/tmp/ca-certificates/usr/share/ca-certificates/${disabled_ca}"
+# Debian's initial package configuration honors the exclusion only when its
+# CA directory exists.
+mkdir -p /etc/ssl/certs /usr/share/ca-certificates
+printf '!%s\n' "${disabled_ca}" >> /etc/ca-certificates.conf
 cat /tmp/ca-certificates/usr/share/ca-certificates/mozilla/*.crt > /etc/ssl/certs/ca-certificates.crt
 # The minimal image does not yet have OpenSSL's default CA path.
 printf '%s\n' 'Acquire::https::CaInfo "/etc/ssl/certs/ca-certificates.crt";' > /etc/apt/apt.conf.d/99https-ca
