@@ -26,11 +26,15 @@ Set `PARALLEL` to control build parallelism (default: 16). Archive timestamps
 use the UTC date of `SOURCE_DATE_EPOCH`, which defaults to the latest Git commit's
 timestamp.
 
-On macOS, install `uv` and Xcode Command Line Tools, then run:
+On macOS, install `uv` and Xcode Command Line Tools, then run natively on an
+Intel or Apple Silicon host:
 
 ```sh
 ./build-macos.py
 ```
+
+The archive is written to `build/llvm-x86_64-apple-darwin.tar.zst` on Intel hosts
+and `build/llvm-aarch64-apple-darwin.tar.zst` on Apple Silicon hosts.
 
 ## Validating
 
@@ -44,8 +48,9 @@ AddressSanitizer, and LTO examples.
 ./validate-linux.sh aarch64 build/llvm-gnu_only-aarch64-unknown-linux-gnu.tar.zst
 ```
 
-On  macOS, extract the archive to a new location and run the smoke
-tests, which cover C, C++, ThinLTO, and profile-guided optimization:
+On macOS, extract the archive matching the host architecture to a new location
+and run the smoke tests, which cover C, C++, ThinLTO, and profile-guided
+optimization. For example, on Apple Silicon:
 
 ```sh
 mkdir -p build/macos-smoke

@@ -57,10 +57,19 @@ DOWNLOADS = {
         "sha256": "c44186a7762ed28954be72e5ff6df9808e0779d4f1bf014ecc4e7e211d31ee34",
         "version": "23.1.3",
     },
-    "sccache": {
+}
+
+SCCACHE_DOWNLOADS = {
+    "aarch64": {
         "url": "https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-aarch64-apple-darwin.tar.gz",
         "size": 7997637,
         "sha256": "308184519b646f5125289e8515b36f6ca65a13a041923994aebe702348674e8e",
+        "version": "0.18.0",
+    },
+    "x86_64": {
+        "url": "https://github.com/mozilla/sccache/releases/download/v0.18.0/sccache-v0.18.0-x86_64-apple-darwin.tar.gz",
+        "size": 9259357,
+        "sha256": "1dade83cc49eeb42337565eccd534b05982820a8e44b851bd7937467a18c7aef",
         "version": "0.18.0",
     },
 }
@@ -196,12 +205,15 @@ def create_normalized_tar_from_directory(
 
 
 def build_llvm(build_path: Path) -> Path:
+    machine = platform.machine()
+    arch = {"arm64": "aarch64", "x86_64": "x86_64"}[machine]
+    downloads = DOWNLOADS | {"sccache": SCCACHE_DOWNLOADS[arch]}
     build_path = build_path.resolve()
     build_path.mkdir(parents=True, exist_ok=True)
     script = ROOT / "scripts" / "clang-macos.sh"
     downloaded_paths = []
 
-    for entry in DOWNLOADS.values():
+    for entry in downloads.values():
         filename = entry["url"].rsplit("/", 1)[-1]
         dest = build_path / filename
 
@@ -222,7 +234,7 @@ def build_llvm(build_path: Path) -> Path:
         env.pop("VIRTUAL_ENV", None)
         env["SCCACHE_DIR"] = env.get("SCCACHE_DIR") or str(build_path / "sccache")
         env["SCCACHE_BASEDIRS"] = str(temp_dir.resolve())
-        for name, entry in DOWNLOADS.items():
+        for name, entry in downloads.items():
             env[f"{name.upper()}_VERSION"] = entry["version"]
 
         cpu_count = multiprocessing.cpu_count()
@@ -230,7 +242,7 @@ def build_llvm(build_path: Path) -> Path:
         env["NUM_JOBS_AGGRESSIVE"] = str(max(cpu_count + 2, cpu_count * 2))
         env["MACOSX_DEPLOYMENT_TARGET"] = "11.0"
 
-        env["HOST_TRIPLE"] = "arm64-apple-darwin23.2.0"
+        env["HOST_TRIPLE"] = f"{machine}-apple-darwin23.2.0"
 
         subprocess.run(
             [str(temp_dir / script.name)],
@@ -240,7 +252,7 @@ def build_llvm(build_path: Path) -> Path:
             stderr=subprocess.STDOUT,
         )
 
-        dest_path = build_path / "llvm-aarch64-apple-darwin.tar.zst"
+        dest_path = build_path / f"llvm-{arch}-apple-darwin.tar.zst"
         print(f"writing {dest_path}")
 
         with zstd.open(
@@ -259,7 +271,7 @@ def build_llvm(build_path: Path) -> Path:
 
 
 if __name__ == "__main__":
-    if platform.system() != "Darwin" or platform.machine() != "arm64":
-        sys.exit("Run this script natively on an ARM64 macOS host.")
+    if platform.system() != "Darwin" or platform.machine() not in {"arm64", "x86_64"}:
+        sys.exit("Run this script natively on an ARM64 or x86_64 macOS host.")
     sys.stdout.reconfigure(line_buffering=True)
     build_llvm(ROOT / "build")

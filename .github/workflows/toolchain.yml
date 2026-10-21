@@ -62,12 +62,22 @@ jobs:
 
   macos:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-build') }}
-    name: apple-aarch64
-    runs-on: macos-15
+    name: apple-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-15
+          - arch: x86_64
+            runner: macos-15-intel
     defaults:
       run:
         shell: bash
+    env:
+      ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,13 +95,13 @@ jobs:
         run: |
           mkdir -p build/macos-smoke
           uv run --no-project --python 3.14 python -m tarfile \
-            --extract build/llvm-aarch64-apple-darwin.tar.zst build/macos-smoke
+            --extract "build/llvm-${ARCH}-apple-darwin.tar.zst" build/macos-smoke
           bash tests/smoke-macos.sh build/macos-smoke/llvm
 
       - name: Upload validated distribution
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: llvm-aarch64-apple-darwin
-          path: build/llvm-aarch64-apple-darwin.tar.zst
+          name: llvm-${{ matrix.arch }}-apple-darwin
+          path: build/llvm-${{ matrix.arch }}-apple-darwin.tar.zst
           if-no-files-found: error
           compression-level: '0'
